@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="uz"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0e1b24">
+<link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="icon.svg">
+<title>Agent</title>
+<style>
+:root{--bg:#0e1b24;--s1:#162833;--s2:#1e3644;--ink:#e8f1f2;--mut:#8fa7b1;--ac:#f2b84b;--ok:#5fd0a0;--er:#ff8a7a;--r:14px}
+*{box-sizing:border-box;margin:0}
+html,body{height:100%}
+body{display:flex;flex-direction:column;background:var(--bg);color:var(--ink);font:16px/1.45 "Avenir Next","Segoe UI",system-ui,sans-serif;padding-top:env(safe-area-inset-top)}
+header{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid var(--s2)}
+header b{font-size:18px;letter-spacing:.2px}
+#st{font-size:12px;color:var(--mut)}
+main{flex:1;overflow:auto;padding:12px 14px}
+.v{display:none}.v.on{display:block}
+.m{max-width:88%;padding:10px 13px;margin:8px 0;border-radius:var(--r);white-space:pre-wrap;word-break:break-word}
+.m.me{margin-left:auto;background:var(--ac);color:#201806;border-bottom-right-radius:4px}
+.m.ai{background:var(--s1);border-bottom-left-radius:4px}
+.m.err{background:#3a1f1f;color:var(--er)}
+.act{display:inline-block;margin-top:8px;padding:9px 14px;border-radius:10px;background:var(--ok);color:#06251a;font-weight:600;text-decoration:none}
+.card{background:var(--s1);border-radius:10px;padding:10px 12px;margin:8px 0;display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.card small{color:var(--mut);display:block}
+.card button{background:none;border:0;color:var(--er);font-size:18px}
+.empty{color:var(--mut);text-align:center;margin-top:40px}
+label{display:block;margin:14px 0 4px;color:var(--mut);font-size:14px}
+input[type=text],input[type=password],select{width:100%;padding:11px 12px;border-radius:10px;border:1px solid var(--s2);background:var(--s1);color:var(--ink);font:inherit}
+.chk{display:flex;gap:10px;align-items:center;margin:14px 0}
+.btn{margin-top:18px;width:100%;padding:12px;border:0;border-radius:10px;background:var(--ac);color:#201806;font:600 16px inherit}
+.btn.g{background:var(--s2);color:var(--ink);margin-top:10px}
+details{margin-top:14px;color:var(--mut);font-size:13px}
+pre{background:var(--s1);padding:10px;border-radius:8px;overflow-x:auto;margin-top:6px;color:var(--ink)}
+#bar{display:none;align-items:center;gap:10px;padding:10px 12px;border-top:1px solid var(--s2)}
+body.chat #bar{display:flex}
+#inp{flex:1;padding:12px 14px;border-radius:24px;border:1px solid var(--s2);background:var(--s1);color:var(--ink);font:inherit}
+#snd{width:44px;height:44px;border-radius:50%;border:0;background:var(--s2);color:var(--ink);font-size:18px}
+#mic{width:60px;height:60px;border-radius:50%;border:0;background:var(--ac);font-size:26px;position:relative}
+#mic.on::after{content:"";position:absolute;inset:-6px;border-radius:50%;border:3px solid var(--ac);animation:p 1s infinite}
+@keyframes p{from{transform:scale(.9);opacity:1}to{transform:scale(1.25);opacity:0}}
+@media(prefers-reduced-motion:reduce){#mic.on::after{animation:none}}
+nav{display:flex;border-top:1px solid var(--s2);padding-bottom:env(safe-area-inset-bottom)}
+nav button{flex:1;padding:12px 0;background:none;border:0;color:var(--mut);font:14px inherit}
+nav button.on{color:var(--ac);font-weight:600}
+</style></head><body class="chat">
+<header><b>Mening agentim</b><span id="st"></span></header>
+<main>
+ <section id="v-chat" class="v on"><div id="msgs"></div></section>
+ <section id="v-log" class="v"><div id="logs"></div></section>
+ <section id="v-notes" class="v"><div id="notes"></div></section>
+ <section id="v-set" class="v">
+  <label>Claude API kaliti</label><input type="password" id="key" autocomplete="off">
+  <label>Model</label><input type="text" id="model" placeholder="claude-sonnet-5-5">
+  <label>Telegram bot tokeni</label><input type="password" id="tg" autocomplete="off">
+  <label>Telegram chat ID (faqat shu chatga javob beriladi)</label><input type="text" id="chat">
+  <label>Google Sheets (Apps Script web app havolasi)</label><input type="text" id="sheet">
+  <details><summary>Sheets uchun Apps Script kodi</summary><pre>function doPost(e){
+ SpreadsheetApp.getActiveSheet()
+  .appendRow(JSON.parse(e.postData.contents));
+ return ContentService.createTextOutput('ok');
+}</pre>Sheets → Extensions → Apps Script → Deploy → Web app (Anyone).</details>
+  <label>Ovoz tili</label>
+  <select id="lang"><option value="uz-UZ">O'zbekcha</option><option value="ru-RU">Русский</option><option value="en-US">English</option></select>
+  <div class="chk"><input type="checkbox" id="speak"><span>Javobni ovozda o'qish</span></div>
+  <div class="chk"><input type="checkbox" id="tgOn"><span>Telegram botdan buyruq qabul qilish</span></div>
+  <button class="btn" id="save">Saqlash</button>
+  <button class="btn g" id="clr">Yangi suhbat</button>
+ </section>
+</main>
+<div id="bar"><button id="mic" aria-label="Ovoz">🎤</button><input id="inp" placeholder="Buyruq yozing" enterkeyhint="send"><button id="snd" aria-label="Yuborish">➤</button></div>
+<nav><button data-v="chat" class="on">Suhbat</button><button data-v="log">Harakatlar</button><button data-v="notes">Qaydlar</button><button data-v="set">Sozlamalar</button></nav>
+<script>
+const $=s=>document.querySelector(s),J=(k,d)=>{try{return JSON.parse(localStorage.getItem(k))??d}catch{return d}};
+let S=J('cfg',{}),notes=J('notes',[]),logs=J('logs',[]),hist=[],busy=false,off=0;
+const save=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch{}};
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const TOOLS=[
+ ['save_note','Qayd saqlaydi',{text:'string'}],
+ ['list_notes','Qaydlar va eslatmalar ro\'yxatini qaytaradi',{}],
+ ['set_reminder','Ilova ochiq turganda N daqiqadan keyin eslatadi',{text:'string',minutes:'number'}],
+ ['sms','SMS tayyorlaydi; foydalanuvchi tugmani bosib yuboradi',{number:'string',text:'string'}],
+ ['call','Qo\'ng\'iroq tayyorlaydi; foydalanuvchi tugmani bosadi',{number:'string'}],
+ ['alarm','Budilnik tayyorlaydi (24 soatlik format)',{hour:'number',minute:'number',label:'string'}],
+ ['calendar_event','Kalendar tadbirini tayyorlaydi; start = YYYY-MM-DDTHH:MM (mahalliy vaqt)',{title:'string',start:'string',minutes:'number'}],
+ ['sheet_row','Google Sheets jadvaliga bitta qator qo\'shadi',{values:'array'}],
+ ['telegram_send','Foydalanuvchining Telegram chatiga xabar yuboradi',{text:'string'}]
+].map(([name,description,p])=>({name,description,input_schema:{type:'object',properties:Object.fromEntries(Object.entries(p).map(([k,t])=>[k,t==='array'?{type:'array',items:{type:'string'}}:{type:t}])),required:Object.keys(p)}}));
+const sys=()=>`Sen foydalanuvchining telefondagi shaxsiy yordamchisisan. Qisqa va aniq o'zbek tilida javob ber (foydalanuvchi boshqa tilda yozsa, o'sha tilda). Hozir: ${new Date().toString()}. Kerakli vositani chaqir; SMS, qo'ng'iroq, budilnik va kalendar uchun foydalanuvchi o'zi tugmani bosadi. Raqam yoki vaqt noaniq bo'lsa, avval so'ra.`;
+
+function bubble(c,t,a){const d=document.createElement('div');d.className='m '+c;d.textContent=t;if(a){const l=document.createElement('a');l.className='act';l.href=a[1];l.textContent=a[0];d.append(document.createElement('br'),l)}$('#msgs').append(d);$('#v-chat').parentNode.scrollTop=1e9;return d}
+function addLog(t,s){logs.unshift({t,s,at:new Date().toLocaleString()});logs=logs.slice(0,100);save('logs',logs);renderLogs()}
+function renderLogs(){$('#logs').innerHTML=logs.length?'':'<p class="empty">Hali harakat yo\'q</p>';logs.forEach(l=>{const d=document.createElement('div');d.className='card';d.innerHTML='<div><span></span><small></small></div>';d.querySelector('span').textContent=l.t;d.querySelector('small').textContent=l.at+' · '+l.s;$('#logs').append(d)})}
+function renderNotes(){const n=$('#notes');n.innerHTML=notes.length?'':'<p class="empty">Qaydlar yo\'q. Agentga "qayd saqla" deng.</p>';notes.forEach((x,i)=>{const d=document.createElement('div');d.className='card';d.innerHTML='<div><span></span><small></small></div><button aria-label="O\'chirish">✕</button>';d.querySelector('span').textContent=x.text;d.querySelector('small').textContent=x.due?'Eslatma: '+new Date(x.due).toLocaleString()+(x.done?' (bajarildi)':''):new Date(x.at).toLocaleString();d.querySelector('button').onclick=()=>{notes.splice(i,1);save('notes',notes);renderNotes()};n.append(d)})}
+const tgSend=async t=>{if(!S.tg||!S.chat)return'Telegram sozlanmagan';try{const r=await(await fetch(`https://api.telegram.org/bot${S.tg}/sendMessage`,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({chat_id:S.chat,text:t})})).json();return r.ok?'yuborildi':'xato: '+r.description}catch(e){return'xato: '+e.message}};
+const ics=s=>s.replace(/[-:]/g,'')+'00';
+
+async function run(n,i,out){
+ switch(n){
+ case'save_note':notes.unshift({text:i.text,at:Date.now()});save('notes',notes);renderNotes();addLog('Qayd: '+i.text,'saqlandi');return'saqlandi';
+ case'list_notes':return JSON.stringify(notes.map(x=>({text:x.text,due:x.due&&new Date(x.due).toString()})));
+ case'set_reminder':notes.unshift({text:i.text,at:Date.now(),due:Date.now()+i.minutes*6e4});save('notes',notes);renderNotes();addLog('Eslatma: '+i.text+' ('+i.minutes+' daq)','rejalashtirildi');if('Notification'in window&&Notification.permission==='default')Notification.requestPermission();return'rejalashtirildi (ilova ochiq bo\'lishi kerak)';
+ case'sms':out.push(['SMS ni ochish','sms:'+i.number+'?body='+encodeURIComponent(i.text)]);addLog('SMS: '+i.number+' — '+i.text,'tasdiq kutilmoqda');return'tugma ko\'rsatildi';
+ case'call':out.push(['Qo\'ng\'iroq: '+i.number,'tel:'+i.number]);addLog('Qo\'ng\'iroq: '+i.number,'tasdiq kutilmoqda');return'tugma ko\'rsatildi';
+ case'alarm':out.push(['Budilnik '+String(i.hour).padStart(2,'0')+':'+String(i.minute).padStart(2,'0'),`intent:#Intent;action=android.intent.action.SET_ALARM;i.android.intent.extra.alarm.HOUR=${i.hour};i.android.intent.extra.alarm.MINUTES=${i.minute};S.android.intent.extra.alarm.MESSAGE=${encodeURIComponent(i.label||'')};B.android.intent.extra.alarm.SKIP_UI=false;end`]);addLog('Budilnik '+i.hour+':'+i.minute,'tasdiq kutilmoqda');return'tugma ko\'rsatildi';
+ case'calendar_event':{const s=new Date(i.start),e=new Date(s.getTime()+(i.minutes||60)*6e4),f=d=>{const p=x=>String(x).padStart(2,'0');return`${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}T${p(d.getHours())}${p(d.getMinutes())}00`};out.push(['Kalendarga qo\'shish','https://calendar.google.com/calendar/render?action=TEMPLATE&text='+encodeURIComponent(i.title)+'&dates='+f(s)+'/'+f(e)]);addLog('Tadbir: '+i.title+' '+i.start,'tasdiq kutilmoqda');return'tugma ko\'rsatildi'}
+ case'sheet_row':if(!S.sheet)return'Sheets sozlanmagan';try{await fetch(S.sheet,{method:'POST',mode:'no-cors',body:JSON.stringify(i.values)});addLog('Sheets: '+i.values.join(' | '),'yuborildi');return'yuborildi'}catch(e){return'xato: '+e.message}
+ case'telegram_send':{const r=await tgSend(i.text);addLog('Telegram: '+i.text,r);return r}
+ }return'noma\'lum vosita'}
+
+async function ask(text){
+ hist.push({role:'user',content:text});let last='';
+ for(let k=0;k<6;k++){
+  let d;try{d=await(await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'content-type':'application/json','x-api-key':S.key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:S.model||'claude-sonnet-5-5',max_tokens:1024,system:sys(),tools:TOOLS,messages:hist})})).json()}catch(e){bubble('err','Ulanib bo\'lmadi: '+e.message);return''}
+  if(d.error){bubble('err','Xato: '+d.error.message);hist.pop();return''}
+  hist.push({role:'assistant',content:d.content});
+  const tx=d.content.filter(b=>b.type==='text').map(b=>b.text).join('\n'),tu=d.content.filter(b=>b.type==='tool_use'),out=[];
+  const res=[];for(const t of tu)res.push({type:'tool_result',tool_use_id:t.id,content:await run(t.name,t.input,out)});
+  if(tx){last=tx;const b=bubble('ai',tx);out.forEach(a=>{const l=document.createElement('a');l.className='act';l.href=a[1];l.textContent=a[0];b.append(document.createElement('br'),l)})}
+  else out.forEach(a=>bubble('ai','',a));
+  if(!tu.length)break;hist.push({role:'user',content:res});
+ }
+ if(S.speak&&last){const u=new SpeechSynthesisUtterance(last);u.lang=S.lang||'uz-UZ';speechSynthesis.speak(u)}
+ return last}
+
+async function send(t){t=(t||'').trim();if(!t||busy)return;if(!S.key){bubble('err','Avval Sozlamalarda Claude API kalitini kiriting.');return}
+ busy=true;bubble('me',t);const w=bubble('ai','…');await ask(t);w.remove();busy=false}
+$('#snd').onclick=()=>{const t=$('#inp').value;$('#inp').value='';send(t)};
+$('#inp').onkeydown=e=>{if(e.key==='Enter')$('#snd').click()};
+const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+$('#mic').onclick=()=>{if(!SR){bubble('err','Bu brauzer ovozni tanimaydi. Chrome ishlating.');return}const r=new SR();r.lang=S.lang||'uz-UZ';r.onresult=e=>send(e.results[0][0].transcript);r.onerror=e=>bubble('err','Ovoz xatosi: '+e.error);r.onend=()=>$('#mic').classList.remove('on');$('#mic').classList.add('on');r.start()};
+
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{document.querySelectorAll('nav button,.v').forEach(x=>x.classList.remove('on'));b.classList.add('on');$('#v-'+b.dataset.v).classList.add('on');document.body.classList.toggle('chat',b.dataset.v==='chat')});
+const F=['key','model','tg','chat','sheet','lang'];F.forEach(f=>{if(S[f])$('#'+f).value=S[f]});$('#speak').checked=!!S.speak;$('#tgOn').checked=!!S.tgOn;
+$('#save').onclick=()=>{F.forEach(f=>S[f]=$('#'+f).value.trim());S.speak=$('#speak').checked;S.tgOn=$('#tgOn').checked;save('cfg',S);$('#st').textContent='Saqlandi';setTimeout(()=>$('#st').textContent='',1500)};
+$('#clr').onclick=()=>{hist=[];$('#msgs').innerHTML='';bubble('ai','Yangi suhbat boshlandi.')};
+
+setInterval(()=>{let ch=0;notes.forEach(n=>{if(n.due&&!n.done&&n.due<=Date.now()){n.done=1;ch=1;addLog('Eslatma: '+n.text,'vaqti keldi');bubble('ai','⏰ '+n.text);try{if(Notification.permission==='granted')new Notification('Eslatma',{body:n.text})}catch{}if(S.speak)speechSynthesis.speak(new SpeechSynthesisUtterance(n.text))}});if(ch){save('notes',notes);renderNotes()}},10000);
+(async function poll(){if(!S.tg||!S.tgOn||!S.chat){return setTimeout(poll,5000)}
+ try{const r=await(await fetch(`https://api.telegram.org/bot${S.tg}/getUpdates?timeout=20&offset=${off}`)).json();
+  for(const u of r.result||[]){off=u.update_id+1;const m=u.message;if(m&&m.text&&String(m.chat.id)===String(S.chat)&&!busy){busy=true;bubble('me','[Telegram] '+m.text);const a=await ask(m.text);busy=false;if(a)tgSend(a)}}
+ }catch{await sleep(5000)}setTimeout(poll,500)})();
+if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
+renderLogs();renderNotes();bubble('ai','Salom! Buyruq yozing yoki mikrofonni bosing. Masalan: "ertaga 9:00 ga budilnik qo\'y".');
+</script></body></html>
